@@ -1,0 +1,5 @@
+{
+  "name": "ZenHTML Runner",
+  "description": "A minimalist, high-performance HTML/CSS/JS sandbox that focuses on instant full-screen execution and distraction-free coding.",
+  "requestFramePermissions": []
+}

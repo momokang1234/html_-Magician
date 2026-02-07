@@ -87,7 +87,7 @@ const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
     ? snippets
     : snippets.filter(s => (s.category || SnippetCategory.UNCATEGORIZED) === filterCategory);
 
-  const usedCategories = [...new Set(snippets.map(s => s.category || SnippetCategory.UNCATEGORIZED))];
+  const usedCategories: SnippetCategory[] = Array.from(new Set(snippets.map(s => s.category || SnippetCategory.UNCATEGORIZED)));
 
   const renderSnippet = (snippet: Snippet) => (
     <div

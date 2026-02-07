@@ -100,8 +100,8 @@ export const classifyByHeuristic = (code: string): ClassificationResult => {
 
   // Difficulty estimation
   const lineCount = code.split('\n').length;
-  const jsBlocks = code.match(/<script[\s\S]*?<\/script>/gi) || [];
-  const totalJsLength = jsBlocks.reduce((sum, b) => sum + b.length, 0);
+  const jsBlocks: string[] = code.match(/<script[\s\S]*?<\/script>/gi) || [];
+  const totalJsLength = jsBlocks.reduce((sum: number, b: string) => sum + b.length, 0);
 
   if (lineCount > 200 || totalJsLength > 2000 || tags.length > 4) {
     difficulty = 'advanced';

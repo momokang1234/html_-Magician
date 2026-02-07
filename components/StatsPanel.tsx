@@ -31,7 +31,8 @@ const MiniCard: React.FC<{ title: string; value: string | number; sub?: string }
 
 const StatsPanel: React.FC<StatsPanelProps> = ({ codeStats, libraryStats, onClose }) => {
   const maxCategory = useMemo(() => {
-    return Math.max(1, ...Object.values(libraryStats.categoryDistribution));
+    const values = Object.values(libraryStats.categoryDistribution) as number[];
+    return Math.max(1, ...values);
   }, [libraryStats]);
 
   const maxActivity = useMemo(() => {
@@ -107,7 +108,7 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ codeStats, libraryStats, onClos
           <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">Category Distribution</h3>
             <div className="space-y-2">
-              {Object.entries(libraryStats.categoryDistribution)
+              {(Object.entries(libraryStats.categoryDistribution) as [string, number][])
                 .filter(([, count]) => count > 0)
                 .sort(([, a], [, b]) => b - a)
                 .map(([cat, count]) => (
@@ -119,7 +120,7 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ codeStats, libraryStats, onClos
                     color={CATEGORY_COLORS[cat as SnippetCategory] || '#666'}
                   />
                 ))}
-              {Object.values(libraryStats.categoryDistribution).every(v => v === 0) && (
+              {(Object.values(libraryStats.categoryDistribution) as number[]).every(v => v === 0) && (
                 <p className="text-[10px] text-white/20 text-center py-4">No categorized snippets yet. Use auto-classify to get started.</p>
               )}
             </div>

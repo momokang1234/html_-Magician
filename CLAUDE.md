@@ -50,9 +50,37 @@ ZenHTML Runner is a minimalist HTML/CSS/JS sandbox application built with React 
 npm run dev        # Start dev server on port 3000
 npm run build      # Production build (output: dist/)
 npm run preview    # Preview production build
+npm run typecheck  # TypeScript type checking (tsc --noEmit)
 ```
 
-There are no test, lint, or formatting commands configured.
+No test, lint, or formatting commands are configured yet.
+
+## CI/CD
+
+### GitHub Actions
+
+Two workflows in `.github/workflows/`:
+
+- **`ci.yml`** — Runs on push to `main` and on PRs targeting `main`. Steps: install, typecheck, build. Uploads `dist/` as artifact.
+- **`deploy.yml`** — Runs on push to `main` (production deploy) and on PRs (preview deploy). Uses `nwtgck/actions-netlify@v3`.
+
+### Netlify
+
+Configured in `netlify.toml`:
+- Build: `npm run build` → `dist/`
+- Node 20 pinned via `[build.environment]`
+- SPA redirect: `/* → /index.html` (status 200)
+- Static assets (`/assets/*`): 1-year immutable cache (Vite hashed filenames)
+- Security headers: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`
+- Preview/branch deploy contexts configured
+
+### Required GitHub Secrets
+
+| Secret | Description |
+|---|---|
+| `NETLIFY_AUTH_TOKEN` | Netlify personal access token (Account Settings → Applications → Personal access tokens) |
+| `NETLIFY_SITE_ID` | Netlify site ID (Site Settings → General → Site ID) |
+| `GEMINI_API_KEY` | Google Gemini API key (for build-time injection) |
 
 ## Environment Variables
 
@@ -147,4 +175,5 @@ Visual analytics panel showing:
 - **Module system:** ES modules (`"type": "module"`)
 - **Path aliases:** `@/*` maps to project root (configured in both `vite.config.ts` and `tsconfig.json`)
 - **Modals:** Rendered as fixed overlays with backdrop blur, closed via `onClose` callback
+- **CI/CD:** GitHub Actions for typecheck/build (CI) and Netlify deploy (CD) on push/PR to `main`
 - **No testing, linting, or formatting tools** are currently configured

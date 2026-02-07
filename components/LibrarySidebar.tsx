@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Snippet, Folder } from '../types';
+import { Snippet, Folder, SnippetCategory, CATEGORY_COLORS } from '../types';
 
 interface LibrarySidebarProps {
   snippets: Snippet[];
@@ -14,7 +14,31 @@ interface LibrarySidebarProps {
   onMoveSnippet: (snippetId: string, folderId: string | null) => void;
   onRenameFolder: (id: string, name: string) => void;
   onImportPath: (files: FileList) => void;
+  onClassifyAll: () => void;
+  onOpenStats: () => void;
+  onOpenCurriculum: () => void;
+  isClassifying: boolean;
 }
+
+const CategoryBadge: React.FC<{ category?: SnippetCategory }> = ({ category }) => {
+  if (!category || category === SnippetCategory.UNCATEGORIZED) return null;
+  const color = CATEGORY_COLORS[category] || '#666';
+  const shortLabel = category.split(' ')[0].substring(0, 6);
+  return (
+    <span
+      className="px-1.5 py-0 rounded text-[8px] font-medium shrink-0 border"
+      style={{ color, backgroundColor: `${color}15`, borderColor: `${color}30` }}
+    >
+      {shortLabel}
+    </span>
+  );
+};
+
+const DifficultyDot: React.FC<{ difficulty?: string }> = ({ difficulty }) => {
+  const colors: Record<string, string> = { beginner: '#10b981', intermediate: '#f59e0b', advanced: '#ef4444' };
+  if (!difficulty) return null;
+  return <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: colors[difficulty] || '#666' }} title={difficulty} />;
+};
 
 const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
   snippets,
@@ -28,8 +52,13 @@ const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
   onMoveSnippet,
   onRenameFolder,
   onImportPath,
+  onClassifyAll,
+  onOpenStats,
+  onOpenCurriculum,
+  isClassifying,
 }) => {
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragStart = (e: React.DragEvent, snippetId: string) => {
@@ -54,6 +83,12 @@ const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
     }
   };
 
+  const filteredSnippets = filterCategory === 'all'
+    ? snippets
+    : snippets.filter(s => (s.category || SnippetCategory.UNCATEGORIZED) === filterCategory);
+
+  const usedCategories: SnippetCategory[] = Array.from(new Set(snippets.map(s => s.category || SnippetCategory.UNCATEGORIZED)));
+
   const renderSnippet = (snippet: Snippet) => (
     <div
       key={snippet.id}
@@ -61,23 +96,25 @@ const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
       onDragStart={(e) => !snippet.isLocal && handleDragStart(e, snippet.id)}
       onClick={() => onSelectSnippet(snippet)}
       className={`group flex items-center justify-between px-3 py-1.5 cursor-pointer rounded-md transition-all text-sm mb-0.5 ${
-        currentSnippetId === snippet.id 
-          ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' 
+        currentSnippetId === snippet.id
+          ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
           : 'text-white/50 hover:bg-white/5 hover:text-white/80'
       }`}
     >
-      <div className="flex items-center gap-2 overflow-hidden">
+      <div className="flex items-center gap-2 overflow-hidden min-w-0">
+        <DifficultyDot difficulty={snippet.difficulty} />
         {snippet.isLocal ? (
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber-500/60"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
         ) : (
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-40"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
         )}
         <span className="truncate text-[12px]">{snippet.name}</span>
+        <CategoryBadge category={snippet.category} />
       </div>
       {!snippet.isLocal && (
-        <button 
+        <button
           onClick={(e) => { e.stopPropagation(); onDeleteSnippet(snippet.id); }}
-          className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-opacity"
+          className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-opacity shrink-0"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         </button>
@@ -99,40 +136,100 @@ const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
             </button>
           </div>
         </div>
-        
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          style={{ display: 'none' }} 
+
+        <input
+          type="file"
+          ref={fileInputRef}
+          style={{ display: 'none' }}
           onChange={handleFileInputChange}
           // @ts-ignore
           webkitdirectory=""
           directory=""
-          multiple 
+          multiple
         />
-        <button 
+        <button
           onClick={() => fileInputRef.current?.click()}
           className="flex items-center justify-center gap-2 w-full py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-[11px] font-medium text-white/70 transition-all"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           Open Path (Directory)
         </button>
+
+        {/* Tool Buttons */}
+        <div className="flex gap-1">
+          <button
+            onClick={onClassifyAll}
+            disabled={isClassifying || snippets.length === 0}
+            className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-[10px] font-medium border transition-all ${
+              isClassifying ? 'opacity-50 border-white/5 text-white/30' : 'border-purple-500/20 text-purple-400 hover:bg-purple-500/10'
+            }`}
+            title="Auto-classify all snippets"
+          >
+            {isClassifying ? 'Classifying...' : 'Auto-Classify'}
+          </button>
+          <button
+            onClick={onOpenStats}
+            className="p-1.5 rounded border border-white/5 hover:bg-white/5 text-white/40 hover:text-white/70 transition-colors"
+            title="Analytics Dashboard"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </button>
+          <button
+            onClick={onOpenCurriculum}
+            className="p-1.5 rounded border border-white/5 hover:bg-white/5 text-white/40 hover:text-white/70 transition-colors"
+            title="Curriculum Manager"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </button>
+        </div>
+
+        {/* Category Filter */}
+        {usedCategories.length > 1 && (
+          <div className="flex flex-wrap gap-1">
+            <button
+              onClick={() => setFilterCategory('all')}
+              className={`px-2 py-0.5 rounded text-[9px] font-medium transition-colors ${
+                filterCategory === 'all' ? 'bg-white/10 text-white/70' : 'bg-white/5 text-white/30 hover:text-white/50'
+              }`}
+            >
+              All
+            </button>
+            {usedCategories.map(cat => {
+              const color = CATEGORY_COLORS[cat] || '#666';
+              const isActive = filterCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setFilterCategory(cat)}
+                  className="px-2 py-0.5 rounded text-[9px] font-medium transition-colors border"
+                  style={{
+                    color: isActive ? color : `${color}80`,
+                    backgroundColor: isActive ? `${color}20` : 'transparent',
+                    borderColor: isActive ? `${color}40` : 'transparent',
+                  }}
+                >
+                  {cat.split(' ')[0]}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="flex-grow overflow-y-auto p-2 scrollbar-thin">
         {/* Uncategorized Snippets */}
-        <div 
+        <div
           onDragOver={(e) => handleDragOver(e, null)}
           onDrop={(e) => handleDrop(e, null)}
           className={`mb-4 transition-all duration-200 rounded-lg p-1 ${dragOverFolder === null ? 'bg-indigo-500/10' : ''}`}
         >
-          {snippets.filter(s => s.folderId === null).map(renderSnippet)}
+          {filteredSnippets.filter(s => s.folderId === null).map(renderSnippet)}
         </div>
 
         {/* Folders List */}
         {folders.map(folder => (
-          <div 
-            key={folder.id} 
+          <div
+            key={folder.id}
             className={`mb-4 rounded-lg transition-all duration-200 ${dragOverFolder === folder.id ? 'bg-indigo-500/10 p-1 ring-1 ring-indigo-500/30' : ''}`}
             onDragOver={(e) => !folder.isLocal && handleDragOver(e, folder.id)}
             onDrop={(e) => !folder.isLocal && handleDrop(e, folder.id)}
@@ -143,7 +240,7 @@ const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
                 {folder.isLocal ? (
                    <span className="truncate text-white/40">{folder.name}</span>
                 ) : (
-                  <input 
+                  <input
                     className="bg-transparent border-none focus:outline-none focus:text-white/60 truncate"
                     defaultValue={folder.name}
                     onBlur={(e) => onRenameFolder(folder.id, e.target.value)}
@@ -162,11 +259,11 @@ const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
               )}
             </div>
             <div className={`pl-4 border-l border-white/5 ml-4`}>
-              {snippets.filter(s => s.folderId === folder.id).map(renderSnippet)}
+              {filteredSnippets.filter(s => s.folderId === folder.id).map(renderSnippet)}
             </div>
           </div>
         ))}
-        
+
         {folders.length === 0 && snippets.length === 0 && (
           <div className="mt-20 text-center px-4">
             <p className="text-[10px] text-white/20 uppercase tracking-widest leading-loose">No snippets yet.<br/>Open a directory to import structure.</p>

@@ -1,4 +1,32 @@
 
+export enum SnippetCategory {
+  LAYOUT = 'Layout',
+  ANIMATION = 'Animation',
+  FORM = 'Form',
+  GAME = 'Game',
+  API_INTEGRATION = 'API Integration',
+  DATA_VISUALIZATION = 'Data Visualization',
+  UI_COMPONENT = 'UI Component',
+  UTILITY = 'Utility',
+  LANDING_PAGE = 'Landing Page',
+  UNCATEGORIZED = 'Uncategorized',
+}
+
+export const CATEGORY_COLORS: Record<SnippetCategory, string> = {
+  [SnippetCategory.LAYOUT]: '#3b82f6',
+  [SnippetCategory.ANIMATION]: '#a855f7',
+  [SnippetCategory.FORM]: '#10b981',
+  [SnippetCategory.GAME]: '#f59e0b',
+  [SnippetCategory.API_INTEGRATION]: '#ef4444',
+  [SnippetCategory.DATA_VISUALIZATION]: '#06b6d4',
+  [SnippetCategory.UI_COMPONENT]: '#ec4899',
+  [SnippetCategory.UTILITY]: '#6b7280',
+  [SnippetCategory.LANDING_PAGE]: '#8b5cf6',
+  [SnippetCategory.UNCATEGORIZED]: '#374151',
+};
+
+export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
+
 export interface Snippet {
   id: string;
   name: string;
@@ -7,6 +35,9 @@ export interface Snippet {
   updatedAt: number;
   isLocal?: boolean;
   filePath?: string;
+  category?: SnippetCategory;
+  tags?: string[];
+  difficulty?: DifficultyLevel;
 }
 
 export interface Folder {
@@ -14,6 +45,48 @@ export interface Folder {
   name: string;
   isLocal?: boolean;
   parentId?: string | null;
+}
+
+export interface CurriculumStep {
+  id: string;
+  snippetId: string;
+  order: number;
+  note: string;
+  isCompleted: boolean;
+}
+
+export interface Curriculum {
+  id: string;
+  name: string;
+  description: string;
+  steps: CurriculumStep[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CodeStats {
+  totalChars: number;
+  totalLines: number;
+  htmlLines: number;
+  cssLines: number;
+  jsLines: number;
+  tagCount: number;
+  selectorCount: number;
+  functionCount: number;
+  hasResponsive: boolean;
+  hasAnimation: boolean;
+  hasExternalResources: boolean;
+}
+
+export interface LibraryStats {
+  totalSnippets: number;
+  totalFolders: number;
+  totalCurriculums: number;
+  categoryDistribution: Record<string, number>;
+  difficultyDistribution: Record<string, number>;
+  avgCodeLength: number;
+  totalCodeLines: number;
+  recentActivity: { date: string; count: number }[];
 }
 
 export interface AppState {
@@ -25,6 +98,7 @@ export enum AppConstants {
   STORAGE_KEY = 'zen_html_code_v1',
   SNIPPETS_KEY = 'zen_html_snippets_v1',
   FOLDERS_KEY = 'zen_html_folders_v1',
+  CURRICULUMS_KEY = 'zen_html_curriculums_v1',
   DEFAULT_HTML = `<!DOCTYPE html>
 <html>
 <head>
